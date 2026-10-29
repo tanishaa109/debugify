@@ -7,17 +7,18 @@ const STORAGE_KEY = "debugify-debug-progress-v1";
 function loadProgress() {
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    const validIds = debugChallenges.map((item) => item.id);
 
     if (!saved || typeof saved !== "object") {
       return { completed: [], levelIndex: 0 };
     }
 
-    const validIds = debugChallenges.map((challenge) => challenge.id);
+    const completed = Array.isArray(saved.completed)
+      ? [...new Set(saved.completed.filter((id) => validIds.includes(id)))]
+      : [];
 
     return {
-      completed: Array.isArray(saved.completed)
-        ? saved.completed.filter((id) => validIds.includes(id))
-        : [],
+      completed,
       levelIndex:
         Number.isInteger(saved.levelIndex) &&
         saved.levelIndex >= 0 &&
@@ -39,7 +40,6 @@ function DebugGame() {
   const [completed, setCompleted] = useState(
     initialProgress.completed
   );
-
   const [code, setCode] = useState(
     debugChallenges[initialProgress.levelIndex].starterCode
   );
@@ -49,9 +49,19 @@ function DebugGame() {
 
   const challenge = debugChallenges[levelIndex];
 
-  const totalXP = debugChallenges.reduce((total, item) => {
-    return total + (completed.includes(item.id) ? item.xp : 0);
-  }, 0);
+  const totalXP = debugChallenges.reduce(
+    (total, item) =>
+      total + (completed.includes(item.id) ? item.xp : 0),
+    0
+  );
+
+  function isUnlocked(index, completedIds = completed) {
+    if (index === 0) return true;
+
+    return debugChallenges
+      .slice(0, index)
+      .every((item) => completedIds.includes(item.id));
+  }
 
   useEffect(() => {
     try {
@@ -60,11 +70,19 @@ function DebugGame() {
         JSON.stringify({ completed, levelIndex })
       );
     } catch {
-      // Progress remains usable even if browser storage is unavailable.
+      // The game can still work if browser storage is unavailable.
     }
   }, [completed, levelIndex]);
 
   function changeLevel(index) {
+    if (
+      index < 0 ||
+      index >= debugChallenges.length ||
+      !isUnlocked(index)
+    ) {
+      return;
+    }
+
     setLevelIndex(index);
     setCode(debugChallenges[index].starterCode);
     setShowHint(false);
@@ -116,6 +134,10 @@ function DebugGame() {
     setResult(null);
   }
 
+  const nextIndex = levelIndex + 1;
+  const hasNextMission = nextIndex < debugChallenges.length;
+  const nextUnlocked = hasNextMission && isUnlocked(nextIndex);
+
   return (
     <div className="debug-game">
       <div className="level-selector">
@@ -132,22 +154,41 @@ function DebugGame() {
         </div>
 
         <div className="level-selector-buttons">
-          {debugChallenges.map((item, index) => (
-            <button
-              key={item.id}
-              type="button"
-              className={`level-button ${
-                levelIndex === index ? "active" : ""
-              } ${completed.includes(item.id) ? "completed" : ""}`}
-              onClick={() => changeLevel(index)}
-            >
-              <span className="level-number">
-                {completed.includes(item.id) ? "✓" : `0${index + 1}`}
-              </span>
-              <span>{item.title}</span>
-              <small>{item.difficulty}</small>
-            </button>
-          ))}
+          {debugChallenges.map((item, index) => {
+            const unlocked = isUnlocked(index);
+            const isComplete = completed.includes(item.id);
+
+            return (
+              <button
+                key={item.id}
+                type="button"
+                disabled={!unlocked}
+                title={
+                  unlocked
+                    ? item.title
+                    : "Complete the previous mission to unlock this one."
+                }
+                className={`level-button ${
+                  levelIndex === index ? "active" : ""
+                } ${isComplete ? "completed" : ""} ${
+                  !unlocked ? "locked" : ""
+                }`}
+                onClick={() => changeLevel(index)}
+              >
+                <span className="level-number">
+                  {!unlocked
+                    ? "🔒"
+                    : isComplete
+                    ? "✓"
+                    : `0${index + 1}`}
+                </span>
+                <span>{item.title}</span>
+                <small>
+                  {!unlocked ? "Locked" : item.difficulty}
+                </small>
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -169,7 +210,9 @@ function DebugGame() {
           <span>Reward: {challenge.xp} XP</span>
           <span>
             Status:{" "}
-            {completed.includes(challenge.id) ? "Completed" : "In progress"}
+            {completed.includes(challenge.id)
+              ? "Completed"
+              : "In progress"}
           </span>
         </div>
 
@@ -195,7 +238,10 @@ function DebugGame() {
             Check Solution
           </button>
 
-          <button type="button" onClick={() => setShowHint(!showHint)}>
+          <button
+            type="button"
+            onClick={() => setShowHint((previous) => !previous)}
+          >
             {showHint ? "Hide Hint" : "Get Hint"}
           </button>
 
@@ -205,7 +251,7 @@ function DebugGame() {
 
           <button
             type="button"
-            onClick={() => setShowSolution(!showSolution)}
+            onClick={() => setShowSolution((previous) => !previous)}
           >
             {showSolution ? "Hide Solution" : "Show Solution"}
           </button>
@@ -236,6 +282,12 @@ function DebugGame() {
           </div>
         )}
 
+        {completed.length === debugChallenges.length && (
+          <div className="result-panel success">
+            All missions completed! You are a Debugify champion!
+          </div>
+        )}
+
         <div className="next-mission-row">
           <button
             type="button"
@@ -247,10 +299,14 @@ function DebugGame() {
 
           <button
             type="button"
-            disabled={levelIndex === debugChallenges.length - 1}
-            onClick={() => changeLevel(levelIndex + 1)}
+            disabled={!nextUnlocked}
+            onClick={() => changeLevel(nextIndex)}
           >
-            Next Mission →
+            {hasNextMission
+              ? nextUnlocked
+                ? "Next Mission →"
+                : "Complete Mission to Unlock"
+              : "All Missions Complete!"}
           </button>
         </div>
 
