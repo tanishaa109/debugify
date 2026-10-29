@@ -13,61 +13,50 @@ import {
   Trophy,
 } from "lucide-react";
 
+import debugChallenges from "../data/debugChallenges";
+
 export default function DebugGame({ onBack }) {
-  const [code, setCode] = useState(`#include <iostream>
-using namespace std;
-
-int main() {
-    int sum = 0;
-
-    for (int i = 1; i < 5; i++) {
-        sum += i;
-    }
-
-    cout << "Sum: " << sum;
-    return 0;
-}`);
+  const [levelIndex, setLevelIndex] = useState(0);
+  const [code, setCode] = useState(debugChallenges[0].starterCode);
   const [showHint, setShowHint] = useState(false);
   const [showSolution, setShowSolution] = useState(false);
   const [result, setResult] = useState(null);
+  const [completed, setCompleted] = useState([]);
 
-  const solution = `#include <iostream>
-using namespace std;
+  const challenge = debugChallenges[levelIndex];
+  const isCompleted = completed.includes(challenge.id);
+  const totalXP = completed.reduce((total, id) => {
+    const item = debugChallenges.find((item) => item.id === id);
+    return total + (item?.xp ?? 0);
+  }, 0);
 
-int main() {
-    int sum = 0;
-
-    for (int i = 1; i <= 5; i++) {
-        sum += i;
-    }
-
-    cout << "Sum: " << sum;
-    return 0;
-}`;
-
-  function checkCode() {
-    const fixed = /for\s*\(\s*int\s+i\s*=\s*1\s*;\s*i\s*<=\s*5\s*;\s*i\+\+\s*\)/.test(code);
-
-    setResult(fixed ? "success" : "error");
+  function selectLevel(index) {
+    setLevelIndex(index);
+    setCode(debugChallenges[index].starterCode);
+    setShowHint(false);
+    setShowSolution(false);
+    setResult(null);
   }
 
   function resetCode() {
-    setCode(`#include <iostream>
-using namespace std;
-
-int main() {
-    int sum = 0;
-
-    for (int i = 1; i < 5; i++) {
-        sum += i;
-    }
-
-    cout << "Sum: " << sum;
-    return 0;
-}`);
-    setResult(null);
+    setCode(challenge.starterCode);
     setShowHint(false);
     setShowSolution(false);
+    setResult(null);
+  }
+
+  function checkCode() {
+    if (challenge.checkPattern.test(code)) {
+      setResult("success");
+
+      setCompleted((previous) =>
+        previous.includes(challenge.id)
+          ? previous
+          : [...previous, challenge.id]
+      );
+    } else {
+      setResult("error");
+    }
   }
 
   return (
@@ -86,34 +75,65 @@ int main() {
         <div className="game-heading-icon">
           <Bug size={28} />
         </div>
+
         <div>
-          <p className="eyebrow">MISSION 001 / DEBUGGING PROTOCOL</p>
-          <h1>The Missing Number</h1>
+          <p className="eyebrow">DEBUGGING PROTOCOL / MISSION {String(challenge.id).padStart(3, "0")}</p>
+          <h1>{challenge.title}</h1>
           <p className="game-subtitle">
-            Find the bug. Fix the code. Earn your XP.
+            Find the bug. Fix the code. Earn XP.
           </p>
         </div>
       </div>
 
       <div className="game-meta">
-        <span><Zap size={15} /> EASY</span>
-        <span><Terminal size={15} /> C++</span>
-        <span><Trophy size={15} /> 250 XP</span>
+        <span><Zap size={15} /> {challenge.difficulty.toUpperCase()}</span>
+        <span><Terminal size={15} /> {challenge.language}</span>
+        <span><Trophy size={15} /> {totalXP} XP EARNED</span>
+      </div>
+
+      <div className="level-selector">
+        <div className="level-selector-heading">
+          <span>SELECT MISSION</span>
+          <span>{completed.length}/{debugChallenges.length} COMPLETE</span>
+        </div>
+
+        <div className="level-selector-buttons">
+          {debugChallenges.map((item, index) => (
+            <button
+              key={item.id}
+              className={`level-button ${
+                index === levelIndex ? "active" : ""
+              } ${completed.includes(item.id) ? "completed" : ""}`}
+              onClick={() => selectLevel(index)}
+              aria-pressed={index === levelIndex}
+            >
+              {completed.includes(item.id) ? (
+                <CheckCircle2 size={15} />
+              ) : (
+                <span className="level-number">
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+              )}
+              <span>{item.difficulty}</span>
+            </button>
+          ))}
+        </div>
       </div>
 
       <section className="mission-card">
         <div className="mission-card-top">
           <span className="eyebrow">MISSION BRIEFING</span>
-          <span className="difficulty-label">ACTIVE</span>
+          <span className="difficulty-label">
+            {isCompleted ? "COMPLETED" : "ACTIVE MISSION"}
+          </span>
         </div>
-        <h2>Find the missing number</h2>
-        <p>
-          This program should calculate the sum of numbers from 1 to 5.
-          The loop contains a bug. Inspect the code and correct it.
-        </p>
+
+        <h2>{challenge.title}</h2>
+        <p>{challenge.description}</p>
+
         <div className="expected-output">
           <span>EXPECTED OUTPUT</span>
-          <code>Sum: 15</code>
+          <code>{challenge.expectedOutput}</code>
         </div>
       </section>
 
@@ -123,7 +143,7 @@ int main() {
             <Terminal size={17} />
             <span>main.cpp</span>
           </div>
-          <span className="language-tag">C++</span>
+          <span className="language-tag">{challenge.language}</span>
         </div>
 
         <textarea
@@ -142,13 +162,15 @@ int main() {
           <button className="reset-button" onClick={resetCode}>
             <RotateCcw size={16} /> Reset
           </button>
+
           <button
             className="hint-button"
-            onClick={() => setShowHint(!showHint)}
+            onClick={() => setShowHint((value) => !value)}
           >
             <Lightbulb size={16} />
             {showHint ? "Hide Hint" : "Get Hint"}
           </button>
+
           <button className="check-button" onClick={checkCode}>
             <Zap size={16} /> Check Code
           </button>
@@ -164,10 +186,7 @@ int main() {
           <Lightbulb size={19} />
           <div>
             <strong>HINT UNLOCKED</strong>
-            <p>
-              The loop stops before reaching 5. Check whether the condition
-              should use less-than or less-than-or-equal.
-            </p>
+            <p>{challenge.hint}</p>
           </div>
         </motion.div>
       )}
@@ -183,14 +202,17 @@ int main() {
           ) : (
             <XCircle size={22} />
           )}
+
           <div>
             <strong>
-              {result === "success" ? "BUG ELIMINATED!" : "TRY AGAIN"}
+              {result === "success" ? "BUG ELIMINATED!" : "BUG STILL ACTIVE"}
             </strong>
             <p>
               {result === "success"
-                ? "Correct loop condition! You fixed the bug. +250 XP"
-                : "The loop condition is still incorrect. Inspect it and try again."}
+                ? isCompleted
+                  ? "Mission complete! Your XP has already been counted."
+                  : `Correct fix detected! You earned ${challenge.xp} XP.`
+                : "The bug is still there. Review the hint and try again."}
             </p>
           </div>
         </motion.div>
@@ -199,21 +221,42 @@ int main() {
       <div className="solution-section">
         <button
           className="solution-toggle"
-          onClick={() => setShowSolution(!showSolution)}
+          onClick={() => setShowSolution((value) => !value)}
         >
           {showSolution ? "Hide Solution" : "View Solution"}
         </button>
 
         {showSolution && (
           <pre className="solution-code">
-            <code>{solution}</code>
+            <code>{challenge.solution}</code>
           </pre>
         )}
       </div>
 
+      {result === "success" && levelIndex < debugChallenges.length - 1 && (
+        <div className="next-mission-row">
+          <button
+            className="check-button"
+            onClick={() => selectLevel(levelIndex + 1)}
+          >
+            Next Mission →
+          </button>
+        </div>
+      )}
+
+      {completed.length === debugChallenges.length && (
+        <div className="game-result success">
+          <Trophy size={22} />
+          <div>
+            <strong>ALL MISSIONS COMPLETE!</strong>
+            <p>You completed every debugging challenge. Total: {totalXP} XP.</p>
+          </div>
+        </div>
+      )}
+
       <p className="game-disclaimer">
-        Prototype: the checker verifies the loop condition; it does not
-        compile or execute C++.
+        Prototype mode: solutions are checked using code patterns. The app
+        does not compile or execute C++.
       </p>
     </motion.div>
   );

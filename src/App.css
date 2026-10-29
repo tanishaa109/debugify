@@ -617,3 +617,85 @@ button:active { transform: scale(.98); }
     flex: 1 1 auto;
   }
 }
+
+/* Debugify Step 14: compact mission selector */
+.level-selector {
+  margin: 0 0 20px;
+  padding: 16px;
+  background: rgba(20, 22, 39, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 14px;
+}
+
+.level-selector-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+  color: #969ab5;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.4px;
+}
+
+.level-selector-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.level-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 100px;
+  padding: 10px 14px;
+  color: #bfc1d7;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 9px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.level-button:hover {
+  border-color: rgba(167, 139, 250, 0.55);
+}
+
+.level-button.active {
+  color: #e6ddff;
+  background: rgba(139, 92, 246, 0.16);
+  border-color: #8b5cf6;
+}
+
+.level-button.completed {
+  color: #86efac;
+}
+
+.level-number {
+  color: #a78bfa;
+  font-family: monospace;
+  font-weight: 800;
+}
+
+.next-mission-row {
+  display: flex;
+  justify-content: flex-end;
+  margin: 16px 0;
+}
+
+@media (max-width: 480px) {
+  .level-selector {
+    padding: 12px;
+  }
+
+  .level-button {
+    flex: 1 1 80px;
+    min-width: 0;
+    padding: 10px 8px;
+  }
+}
