@@ -1,41 +1,97 @@
 
-import { useState } from "react";
-import { motion } from "framer-motion";
-import {
-  Bug,
-  Zap,
-  Lightbulb,
-  RotateCcw,
-  CheckCircle2,
-  XCircle,
-  ArrowLeft,
-  Terminal,
-  Trophy,
-} from "lucide-react";
-
+import { useEffect, useState } from "react";
 import debugChallenges from "../data/debugChallenges";
 
-export default function DebugGame({ onBack }) {
-  const [levelIndex, setLevelIndex] = useState(0);
-  const [code, setCode] = useState(debugChallenges[0].starterCode);
+const STORAGE_KEY = "debugify-debug-progress-v1";
+
+function loadProgress() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+
+    if (!saved || typeof saved !== "object") {
+      return { completed: [], levelIndex: 0 };
+    }
+
+    const validIds = debugChallenges.map((challenge) => challenge.id);
+
+    return {
+      completed: Array.isArray(saved.completed)
+        ? saved.completed.filter((id) => validIds.includes(id))
+        : [],
+      levelIndex:
+        Number.isInteger(saved.levelIndex) &&
+        saved.levelIndex >= 0 &&
+        saved.levelIndex < debugChallenges.length
+          ? saved.levelIndex
+          : 0,
+    };
+  } catch {
+    return { completed: [], levelIndex: 0 };
+  }
+}
+
+function DebugGame() {
+  const [initialProgress] = useState(loadProgress);
+
+  const [levelIndex, setLevelIndex] = useState(
+    initialProgress.levelIndex
+  );
+  const [completed, setCompleted] = useState(
+    initialProgress.completed
+  );
+
+  const [code, setCode] = useState(
+    debugChallenges[initialProgress.levelIndex].starterCode
+  );
   const [showHint, setShowHint] = useState(false);
   const [showSolution, setShowSolution] = useState(false);
   const [result, setResult] = useState(null);
-  const [completed, setCompleted] = useState([]);
 
   const challenge = debugChallenges[levelIndex];
-  const isCompleted = completed.includes(challenge.id);
-  const totalXP = completed.reduce((total, id) => {
-    const item = debugChallenges.find((item) => item.id === id);
-    return total + (item?.xp ?? 0);
+
+  const totalXP = debugChallenges.reduce((total, item) => {
+    return total + (completed.includes(item.id) ? item.xp : 0);
   }, 0);
 
-  function selectLevel(index) {
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ completed, levelIndex })
+      );
+    } catch {
+      // Progress remains usable even if browser storage is unavailable.
+    }
+  }, [completed, levelIndex]);
+
+  function changeLevel(index) {
     setLevelIndex(index);
     setCode(debugChallenges[index].starterCode);
     setShowHint(false);
     setShowSolution(false);
     setResult(null);
+  }
+
+  function checkCode() {
+    if (challenge.checkPattern.test(code)) {
+      const alreadyCompleted = completed.includes(challenge.id);
+
+      if (!alreadyCompleted) {
+        setCompleted((previous) => [...previous, challenge.id]);
+      }
+
+      setResult({
+        success: true,
+        message: alreadyCompleted
+          ? "Mission already completed! Your XP is safe."
+          : `Mission completed! You earned ${challenge.xp} XP.`,
+      });
+    } else {
+      setResult({
+        success: false,
+        message: "Not quite! Check your code and try again.",
+      });
+    }
   }
 
   function resetCode() {
@@ -45,108 +101,84 @@ export default function DebugGame({ onBack }) {
     setResult(null);
   }
 
-  function checkCode() {
-    if (challenge.checkPattern.test(code)) {
-      setResult("success");
+  function resetProgress() {
+    const confirmed = window.confirm(
+      "Reset all completed missions and XP? This cannot be undone."
+    );
 
-      setCompleted((previous) =>
-        previous.includes(challenge.id)
-          ? previous
-          : [...previous, challenge.id]
-      );
-    } else {
-      setResult("error");
-    }
+    if (!confirmed) return;
+
+    setCompleted([]);
+    setLevelIndex(0);
+    setCode(debugChallenges[0].starterCode);
+    setShowHint(false);
+    setShowSolution(false);
+    setResult(null);
   }
 
   return (
-    <motion.div
-      className="debug-game"
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-    >
-      <button className="game-back" onClick={onBack}>
-        <ArrowLeft size={17} />
-        Back to Dashboard
-      </button>
-
-      <div className="game-heading">
-        <div className="game-heading-icon">
-          <Bug size={28} />
-        </div>
-
-        <div>
-          <p className="eyebrow">DEBUGGING PROTOCOL / MISSION {String(challenge.id).padStart(3, "0")}</p>
-          <h1>{challenge.title}</h1>
-          <p className="game-subtitle">
-            Find the bug. Fix the code. Earn XP.
-          </p>
-        </div>
-      </div>
-
-      <div className="game-meta">
-        <span><Zap size={15} /> {challenge.difficulty.toUpperCase()}</span>
-        <span><Terminal size={15} /> {challenge.language}</span>
-        <span><Trophy size={15} /> {totalXP} XP EARNED</span>
-      </div>
-
+    <div className="debug-game">
       <div className="level-selector">
         <div className="level-selector-heading">
-          <span>SELECT MISSION</span>
-          <span>{completed.length}/{debugChallenges.length} COMPLETE</span>
+          <div>
+            <p className="eyebrow">TRAINING SIMULATION</p>
+            <h2>Debug the Mess</h2>
+          </div>
+
+          <div className="xp-display">
+            <span>YOUR XP</span>
+            <strong>{totalXP} XP</strong>
+          </div>
         </div>
 
         <div className="level-selector-buttons">
           {debugChallenges.map((item, index) => (
             <button
               key={item.id}
+              type="button"
               className={`level-button ${
-                index === levelIndex ? "active" : ""
+                levelIndex === index ? "active" : ""
               } ${completed.includes(item.id) ? "completed" : ""}`}
-              onClick={() => selectLevel(index)}
-              aria-pressed={index === levelIndex}
+              onClick={() => changeLevel(index)}
             >
-              {completed.includes(item.id) ? (
-                <CheckCircle2 size={15} />
-              ) : (
-                <span className="level-number">
-                  {String(index + 1).padStart(2, "0")}
-                </span>
-              )}
-              <span>{item.difficulty}</span>
+              <span className="level-number">
+                {completed.includes(item.id) ? "✓" : `0${index + 1}`}
+              </span>
+              <span>{item.title}</span>
+              <small>{item.difficulty}</small>
             </button>
           ))}
         </div>
       </div>
 
-      <section className="mission-card">
-        <div className="mission-card-top">
-          <span className="eyebrow">MISSION BRIEFING</span>
-          <span className="difficulty-label">
-            {isCompleted ? "COMPLETED" : "ACTIVE MISSION"}
+      <div className="mission-card">
+        <div className="mission-header">
+          <div>
+            <p className="eyebrow">CURRENT MISSION</p>
+            <h2>{challenge.title}</h2>
+          </div>
+          <span className="difficulty-badge">
+            {challenge.difficulty}
           </span>
         </div>
 
-        <h2>{challenge.title}</h2>
-        <p>{challenge.description}</p>
+        <p className="mission-description">{challenge.description}</p>
 
-        <div className="expected-output">
-          <span>EXPECTED OUTPUT</span>
-          <code>{challenge.expectedOutput}</code>
+        <div className="mission-meta">
+          <span>Language: {challenge.language}</span>
+          <span>Reward: {challenge.xp} XP</span>
+          <span>
+            Status:{" "}
+            {completed.includes(challenge.id) ? "Completed" : "In progress"}
+          </span>
         </div>
-      </section>
 
-      <section className="editor-panel">
-        <div className="editor-header">
-          <div>
-            <Terminal size={17} />
-            <span>main.cpp</span>
-          </div>
-          <span className="language-tag">{challenge.language}</span>
-        </div>
+        <label className="code-label" htmlFor="debug-code">
+          YOUR CODE
+        </label>
 
         <textarea
+          id="debug-code"
           className="code-editor"
           value={code}
           onChange={(event) => {
@@ -154,110 +186,84 @@ export default function DebugGame({ onBack }) {
             setResult(null);
           }}
           spellCheck={false}
-          autoComplete="off"
-          aria-label="C++ code editor"
+          autoCapitalize="off"
+          autoCorrect="off"
         />
 
-        <div className="game-actions">
-          <button className="reset-button" onClick={resetCode}>
-            <RotateCcw size={16} /> Reset
+        <div className="mission-actions">
+          <button type="button" onClick={checkCode}>
+            Check Solution
           </button>
 
-          <button
-            className="hint-button"
-            onClick={() => setShowHint((value) => !value)}
-          >
-            <Lightbulb size={16} />
+          <button type="button" onClick={() => setShowHint(!showHint)}>
             {showHint ? "Hide Hint" : "Get Hint"}
           </button>
 
-          <button className="check-button" onClick={checkCode}>
-            <Zap size={16} /> Check Code
+          <button type="button" onClick={resetCode}>
+            Reset Code
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setShowSolution(!showSolution)}
+          >
+            {showSolution ? "Hide Solution" : "Show Solution"}
           </button>
         </div>
-      </section>
 
-      {showHint && (
-        <motion.div
-          className="hint-card"
-          initial={{ opacity: 0, y: 5 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <Lightbulb size={19} />
-          <div>
-            <strong>HINT UNLOCKED</strong>
+        {showHint && (
+          <div className="hint-panel">
+            <strong>Hint</strong>
             <p>{challenge.hint}</p>
           </div>
-        </motion.div>
-      )}
-
-      {result && (
-        <motion.div
-          className={`game-result ${result}`}
-          initial={{ opacity: 0, y: 5 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          {result === "success" ? (
-            <CheckCircle2 size={22} />
-          ) : (
-            <XCircle size={22} />
-          )}
-
-          <div>
-            <strong>
-              {result === "success" ? "BUG ELIMINATED!" : "BUG STILL ACTIVE"}
-            </strong>
-            <p>
-              {result === "success"
-                ? isCompleted
-                  ? "Mission complete! Your XP has already been counted."
-                  : `Correct fix detected! You earned ${challenge.xp} XP.`
-                : "The bug is still there. Review the hint and try again."}
-            </p>
-          </div>
-        </motion.div>
-      )}
-
-      <div className="solution-section">
-        <button
-          className="solution-toggle"
-          onClick={() => setShowSolution((value) => !value)}
-        >
-          {showSolution ? "Hide Solution" : "View Solution"}
-        </button>
+        )}
 
         {showSolution && (
-          <pre className="solution-code">
-            <code>{challenge.solution}</code>
-          </pre>
+          <div className="solution-panel">
+            <strong>Solution</strong>
+            <pre>{challenge.solution}</pre>
+          </div>
         )}
-      </div>
 
-      {result === "success" && levelIndex < debugChallenges.length - 1 && (
+        {result && (
+          <div
+            className={`result-panel ${
+              result.success ? "success" : "error"
+            }`}
+            role="status"
+          >
+            {result.message}
+          </div>
+        )}
+
         <div className="next-mission-row">
           <button
-            className="check-button"
-            onClick={() => selectLevel(levelIndex + 1)}
+            type="button"
+            disabled={levelIndex === 0}
+            onClick={() => changeLevel(levelIndex - 1)}
+          >
+            Previous Mission
+          </button>
+
+          <button
+            type="button"
+            disabled={levelIndex === debugChallenges.length - 1}
+            onClick={() => changeLevel(levelIndex + 1)}
           >
             Next Mission →
           </button>
         </div>
-      )}
 
-      {completed.length === debugChallenges.length && (
-        <div className="game-result success">
-          <Trophy size={22} />
-          <div>
-            <strong>ALL MISSIONS COMPLETE!</strong>
-            <p>You completed every debugging challenge. Total: {totalXP} XP.</p>
-          </div>
-        </div>
-      )}
-
-      <p className="game-disclaimer">
-        Prototype mode: solutions are checked using code patterns. The app
-        does not compile or execute C++.
-      </p>
-    </motion.div>
+        <button
+          type="button"
+          className="reset-progress-button"
+          onClick={resetProgress}
+        >
+          Reset All Progress
+        </button>
+      </div>
+    </div>
   );
 }
+
+export default DebugGame;
