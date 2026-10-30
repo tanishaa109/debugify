@@ -699,3 +699,55 @@ button:active { transform: scale(.98); }
     padding: 10px 8px;
   }
 }
+
+/* DEBUGIFY - Mission Button Styling Fix */
+
+.level-selector-buttons .level-button {
+  appearance: none;
+  background: rgba(15, 20, 45, 0.85);
+  color: #e8eaff;
+  border: 1px solid rgba(120, 110, 255, 0.35);
+  border-radius: 12px;
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  opacity: 1;
+}
+
+.level-selector-buttons .level-button:hover:not(:disabled) {
+  border-color: #8b7cff;
+  background: rgba(65, 50, 130, 0.35);
+  transform: translateY(-2px);
+  box-shadow: 0 0 16px rgba(125, 100, 255, 0.2);
+}
+
+.level-selector-buttons .level-button.active {
+  border-color: #9b8cff;
+  background: rgba(100, 75, 200, 0.3);
+  box-shadow: 0 0 14px rgba(130, 105, 255, 0.25);
+}
+
+.level-selector-buttons .level-button.completed {
+  border-color: rgba(70, 220, 170, 0.55);
+}
+
+.level-selector-buttons .level-button.locked,
+.level-selector-buttons .level-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.level-selector-buttons .level-number {
+  color: #a99aff;
+  font-weight: 700;
+}
+
+.level-selector-buttons .level-button.completed .level-number {
+  color: #55e6b5;
+}
+
+.level-selector-buttons .level-button small {
+  color: #a9a9c7;
+}
