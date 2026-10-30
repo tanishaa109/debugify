@@ -751,3 +751,47 @@ button:active { transform: scale(.98); }
 .level-selector-buttons .level-button small {
   color: #a9a9c7;
 }
+
+/* Debugify - Dark Neon Action Buttons */
+
+.mission-actions button,
+.next-mission-row button,
+.reset-progress-button {
+  background: linear-gradient(135deg, #17152f, #242044) !important;
+  color: #e8e5ff !important;
+  border: 1px solid rgba(143, 119, 255, 0.55) !important;
+  border-radius: 10px !important;
+  padding: 11px 18px !important;
+  font-weight: 600 !important;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 0 10px rgba(120, 90, 255, 0.12);
+}
+
+.mission-actions button:hover:not(:disabled),
+.next-mission-row button:hover:not(:disabled),
+.reset-progress-button:hover {
+  background: linear-gradient(135deg, #383064, #29204f) !important;
+  border-color: #a99aff !important;
+  box-shadow: 0 0 16px rgba(143, 119, 255, 0.3);
+  transform: translateY(-2px);
+}
+
+.mission-actions button:disabled,
+.next-mission-row button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.reset-progress-button {
+  border-color: rgba(255, 100, 130, 0.45) !important;
+  color: #ffb4c2 !important;
+  background: rgba(65, 25, 45, 0.75) !important;
+}
+
+.reset-progress-button:hover {
+  background: rgba(100, 35, 60, 0.9) !important;
+  border-color: #ff829e !important;
+}
