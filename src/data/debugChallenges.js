@@ -38,6 +38,7 @@ int main() {
 }`,
     checkPattern: /for\s*\(\s*int\s+i\s*=\s*1\s*;\s*i\s*<=\s*5\s*;\s*i\+\+\s*\)/,
   },
+
   {
     id: 2,
     title: "The Off-by-One Bug",
@@ -70,6 +71,7 @@ int main() {
 }`,
     checkPattern: /for\s*\(\s*int\s+i\s*=\s*1\s*;\s*i\s*<=\s*10\s*;\s*i\+\+\s*\)/,
   },
+
   {
     id: 3,
     title: "The Wrong Operator",
@@ -99,6 +101,109 @@ int main() {
     return 0;
 }`,
     checkPattern: /int\s+result\s*=\s*4\s*\*\s*3\s*;/,
+  },
+
+  {
+    id: 4,
+    title: "The Wrong Condition",
+    difficulty: "Medium",
+    language: "C++",
+    xp: 150,
+    description:
+      "A person aged 18 or above should be classified as an adult. Fix the condition.",
+    starterCode: `#include <iostream>
+using namespace std;
+
+int main() {
+    int age = 18;
+
+    if (age > 18) {
+        cout << "Adult";
+    }
+
+    return 0;
+}`,
+    expectedOutput: "Adult",
+    hint: "An age of exactly 18 should also satisfy the condition.",
+    solution: `#include <iostream>
+using namespace std;
+
+int main() {
+    int age = 18;
+
+    if (age >= 18) {
+        cout << "Adult";
+    }
+
+    return 0;
+}`,
+    checkPattern: /if\s*\(\s*age\s*>=\s*18\s*\)/,
+  },
+
+  {
+    id: 5,
+    title: "The Missing Update",
+    difficulty: "Medium",
+    language: "C++",
+    xp: 150,
+    description:
+      "Print numbers from 1 to 5. Fix the loop so its counter increases.",
+    starterCode: `#include <iostream>
+using namespace std;
+
+int main() {
+    for (int i = 1; i <= 5; ) {
+        cout << i << " ";
+    }
+
+    return 0;
+}`,
+    expectedOutput: "1 2 3 4 5",
+    hint: "The loop counter needs to increase after every iteration.",
+    solution: `#include <iostream>
+using namespace std;
+
+int main() {
+    for (int i = 1; i <= 5; i++) {
+        cout << i << " ";
+    }
+
+    return 0;
+}`,
+    checkPattern: /for\s*\(\s*int\s+i\s*=\s*1\s*;\s*i\s*<=\s*5\s*;\s*i\+\+\s*\)/,
+  },
+
+  {
+    id: 6,
+    title: "The Array Mystery",
+    difficulty: "Hard",
+    language: "C++",
+    xp: 200,
+    description:
+      "Print the fourth element of the array. Find the incorrect index.",
+    starterCode: `#include <iostream>
+using namespace std;
+
+int main() {
+    int arr[5] = {10, 20, 30, 40, 50};
+
+    cout << arr[4];
+
+    return 0;
+}`,
+    expectedOutput: "40",
+    hint: "Array indexing starts from zero, not one.",
+    solution: `#include <iostream>
+using namespace std;
+
+int main() {
+    int arr[5] = {10, 20, 30, 40, 50};
+
+    cout << arr[3];
+
+    return 0;
+}`,
+    checkPattern: /cout\s*<<\s*arr\s*\[\s*3\s*\]\s*;/,
   },
 ];
 
