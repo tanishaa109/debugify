@@ -55,12 +55,12 @@ function DebugGame() {
     0
   );
 
-  function isUnlocked(index, completedIds = completed) {
+  function isUnlocked(index) {
     if (index === 0) return true;
 
     return debugChallenges
       .slice(0, index)
-      .every((item) => completedIds.includes(item.id));
+      .every((item) => completed.includes(item.id));
   }
 
   useEffect(() => {
@@ -70,7 +70,7 @@ function DebugGame() {
         JSON.stringify({ completed, levelIndex })
       );
     } catch {
-      // The game can still work if browser storage is unavailable.
+      // Game progress can still work without browser storage.
     }
   }, [completed, levelIndex]);
 
@@ -109,6 +109,39 @@ function DebugGame() {
         success: false,
         message: "Not quite! Check your code and try again.",
       });
+    }
+  }
+
+  function handleEditorKeyDown(event) {
+    const textarea = event.currentTarget;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+
+    if (event.key === "Tab") {
+      event.preventDefault();
+
+      textarea.setRangeText("    ", start, end, "end");
+      setCode(textarea.value);
+      setResult(null);
+      return;
+    }
+
+    if (event.key === "Enter") {
+      event.preventDefault();
+
+      const textBeforeCursor = code.slice(0, start);
+      const currentLine = textBeforeCursor.split("\n").pop();
+      const indentation = currentLine.match(/^\s*/)[0];
+
+      textarea.setRangeText(
+        "\n" + indentation,
+        start,
+        end,
+        "end"
+      );
+
+      setCode(textarea.value);
+      setResult(null);
     }
   }
 
@@ -228,6 +261,7 @@ function DebugGame() {
             setCode(event.target.value);
             setResult(null);
           }}
+          onKeyDown={handleEditorKeyDown}
           spellCheck={false}
           autoCapitalize="off"
           autoCorrect="off"
